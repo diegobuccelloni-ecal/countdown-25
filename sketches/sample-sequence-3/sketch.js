@@ -1,45 +1,88 @@
-import { createEngine } from "../_shared/engine.js"
-import { Spring } from "../_shared/spring.js"
+import { createEngine } from "../_shared/engine.js";
+import { Spring } from "../_shared/spring.js";
 
-const { renderer, input, math, run, finish, } = createEngine()
-const { ctx, canvas } = renderer
-run(update)
+const { renderer, run } = createEngine();
+const { ctx, canvas } = renderer;
 
-const spring = new Spring({
-  position: 0,
-  frequency: 2.5,
-  halfLife: 0.05
-})
+run(update);
 
+canvas.style.cursor = "pointer";
+
+let pumpTarget = 0; // Target inflation level
+const pumpStep = 0.5; // Amount to increase pump target per click
+const maxPumpTarget = 2; // Maximum pump target before explosion
+let popped = false; // Did the balloon pop?
+let popTimer = 0; // Time since pop started
+
+const pumpBalloon = () => {
+  pumpTarget = Math.min(maxPumpTarget, pumpTarget + pumpStep); // Increase pump target with each click
+};
+
+canvas.addEventListener("click", (e) => {
+  e.preventDefault();
+  pumpBalloon(); // Pump the balloon on each click
+});
+
+const spring = new Spring({ position: 0, frequency: 1.2, halfLife: 0.15 });
+
+const balloonPath =
+  "M205.82,184.43c-3.37-3.15-17.4-9.86-25.69-6.33-1.48.63-2.88,1.33-4.2,2.11-.03-.5-.09-1-.18-1.5-.65-3.6-1.65-8.04-3.14-11.67,2.47-3.74,4.59-8.85,6.09-12.97,1.69,1.05,3.5,1.98,5.44,2.78,8.43,3.48,22.18-4.41,25.42-7.98,14.74-16.22,15.71-20.69,13.58-42.76-2-20.69-21.04-50.79-39.24-50.89.02-.09.02-.13.02-.13,0,0,5.28-13.31-2.5-25.85-8.03-12.94-24.67-18.5-24.67-18.5,0,0-26.83-14.84-35.13-9.63-6.92,4.35-11.09,10.69-13.42,17.43C98.35-5.34,70.95-1.92,47.27,7.46,17.93,19.1-3.93,35.55.59,55.18c5.28,22.93,32.54,25.19,62.76,16.61,19.71-5.6,35.84-15.44,43.2-27.32,3.24,16.43,39.3,28.47,57.16,27.35l-.42.87c-5.61,11.88-8.74,35.76-2.83,55.56-1.23-.2-2.61-.41-4.15-.6-17.42-2.24-37.43,4.01-42.96,5.25-5.53,1.23-10.75,10.2-12.16,13.79-1.4,3.53-4.66,3.56-4.77,3.56,0,0-23.87,1.81-27.83,1.91-3.35.09-6.49,1-6.89,3.77-.1.17-.19.34-.27.53-1.54,3.62,1.84,5.33,5.71,6.07,3.88.74,27.02,6.24,27.02,6.24,0,0,3.29.51,4.03,3.99.74,3.48,4.22,12.44,9.43,14.46,5.21,2.01,23.75,10.91,41.28,11.7,4.46.21,7.6.17,9.82.04.36-.02.72-.06,1.07-.11-8.4,19.49-4.19,45.42,2.56 57.4.15.26.29.52.45.77-17.9-.3-53.48,12.19-56.12,27.4-7.78-10.62-24.25-19.02-44.15-23.39-30.51-6.7-57.67-3.54-62.11,17.74-3.8,18.21,18.64,32.46,48.38,41.99,24,7.69,51.51,9.75,60.47-12.59,2.58,6.1,6.97,11.77,14.05,15.49,8.48,4.46,34.75-10.23,34.75-10.23,0,0,16.43-5.77,23.98-17.97,7.31-11.83,1.56-23.85,1.56-23.85,0,0,0-.05-.02-.13,18.19-.81,36.12-29.22,37.36-48.3,1.32-20.36.19-24.43-15.13-38.75h0Z";
 
 function update(dt) {
+  if (popped) {
+    // After pop: fade to black, with tiny white flash at start
+    popTimer += dt;
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  if (input.isPressed()) {
-    spring.target = 0
-  }
-  else {
-    spring.target = 1
+    if (popTimer < 0.08) {
+      const alpha = 1 - popTimer / 0.08;
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    return;
   }
 
-  spring.step(dt)
+  spring.target = pumpTarget;
+
+  spring.step(dt);
+
+  const squeeze = Math.max(spring.position, 0);
 
   const x = canvas.width / 2;
   const y = canvas.height / 2;
-  const scale = Math.max(spring.position, 0)
 
-  ctx.fillStyle = "black"
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "white"
-  ctx.textBaseline = "middle"
-  ctx.font = `${canvas.height}px Helvetica Neue, Helvetica , bold`
-  ctx.textAlign = "center"
-  ctx.translate(x, y)
-  ctx.scale(scale, scale)
-  ctx.fillText("3", 0, 0)
+  const maxSize = Math.min(canvas.width, canvas.height) * 0.8;
+  const baseScale = maxSize / Math.max(223.99, 326.09);
 
-  if (scale <= 0) {
-    finish()
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(baseScale, baseScale);
+  ctx.translate(-223.99 / 2, -326.09 / 2);
+
+  const path = new Path2D(balloonPath);
+
+  ctx.lineWidth = (40 + squeeze * 220) / baseScale;
+
+  ctx.fillStyle = "white";
+  ctx.strokeStyle = "white";
+
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  ctx.fill(path);
+  ctx.stroke(path);
+
+  ctx.restore();
+
+  // Check if the balloon should pop
+  if (pumpTarget >= maxPumpTarget) {
+    popped = true; // Trigger the pop
+    popTimer = 0; // Reset pop timer
   }
 
+  pumpTarget = Math.max(pumpTarget - dt * 0.3, 0);
 }
