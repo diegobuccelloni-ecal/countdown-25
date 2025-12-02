@@ -12,7 +12,7 @@ const maxPumpTarget = 2.5;
 let popped = false;
 let popTimer = 0;
 let isPumping = false;
-const spring = new Spring({ position: 0, frequency: 1.2, halfLife: 0.15 });
+const spring = new Spring({ position: 0, frequency: 0.8, halfLife: 0.9 });
 const balloonP2D = new Path2D(balloonPath);
 
 function getPumpTransform() {
@@ -21,7 +21,7 @@ function getPumpTransform() {
 
 function isInsideSVGBounds(mx, my) {
   const { x, y } = getPumpTransform();
-  const svgSize = Math.min(canvas.width, canvas.height) * 0.2;
+  const svgSize = Math.min(canvas.width, canvas.height) * 0.5;
   const svgOffset = 50;
   const bounds = {
     left: x - svgSize / 2 - svgOffset,
@@ -74,8 +74,8 @@ function pumpBalloon() {
 }
 
 let fadeTimer = 0;
-const fadeDuration = 5;
-const initialBalloonScale = 0.2;
+const fadeDuration = 2;
+const initialBalloonScale = 0.5;
 
 function update(dt) {
   fadeTimer += dt;
@@ -115,7 +115,7 @@ function update(dt) {
       (baseBalloonScale - initialBalloonScale) * (pumpTarget / maxPumpTarget)
   );
   ctx.translate(-223.99 / 2, -326.09 / 2);
-  ctx.lineWidth = (40 + squeeze * 220) / baseBalloonScale;
+  ctx.lineWidth = (10 + squeeze * 150) / baseBalloonScale;
   ctx.strokeStyle = "white";
   ctx.lineCap = "round";
   ctx.fill(balloonP2D);
@@ -130,7 +130,7 @@ function update(dt) {
   ctx.moveTo(cx, cy);
   ctx.quadraticCurveTo(
     (cx - 200 + x) / 2,
-    (cy + 350 + y) * 1,
+    (cy + 200 + y) * 1,
     x - svgSize / 2,
     y + 20
   );
