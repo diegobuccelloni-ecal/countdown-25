@@ -73,25 +73,33 @@ function pumpBalloon() {
   pumpTarget = Math.min(maxPumpTarget, pumpTarget + pumpStep);
 }
 
+let fadeTimer = 0;
+const fadeDuration = 5;
+const initialBalloonScale = 0.2;
+
 function update(dt) {
+  fadeTimer += dt;
+  const fadeAlpha = Math.min(fadeTimer / fadeDuration, 1);
+
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.globalAlpha = fadeAlpha;
+
   if (popped) {
     popTimer += dt;
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (popTimer < 0.08) {
       const alpha = 1 - popTimer / 0.08;
       ctx.fillStyle = `rgba(255,255,255,${alpha})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
+    ctx.globalAlpha = 1;
     return;
   }
 
   spring.target = pumpTarget;
   spring.step(dt);
   const squeeze = Math.max(spring.position, 0);
-
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
@@ -100,10 +108,16 @@ function update(dt) {
 
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.scale(baseBalloonScale, baseBalloonScale);
+  ctx.scale(
+    initialBalloonScale +
+      (baseBalloonScale - initialBalloonScale) * (pumpTarget / maxPumpTarget),
+    initialBalloonScale +
+      (baseBalloonScale - initialBalloonScale) * (pumpTarget / maxPumpTarget)
+  );
   ctx.translate(-223.99 / 2, -326.09 / 2);
   ctx.lineWidth = (40 + squeeze * 220) / baseBalloonScale;
   ctx.strokeStyle = "white";
+  ctx.lineCap = "round";
   ctx.fill(balloonP2D);
   ctx.stroke(balloonP2D);
   ctx.restore();
@@ -113,7 +127,7 @@ function update(dt) {
   ctx.strokeStyle = "white";
   ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.moveTo(cx - 200, cy + 350);
+  ctx.moveTo(cx, cy);
   ctx.quadraticCurveTo(
     (cx - 200 + x) / 2,
     (cy + 350 + y) * 1,
@@ -139,4 +153,6 @@ function update(dt) {
   if (!isPumping) {
     pumpTarget = Math.max(pumpTarget - dt * 0.3, 0);
   }
+
+  ctx.globalAlpha = 1;
 }
