@@ -67,6 +67,23 @@ let dragOffsetY = 0;
 // Water droplets
 let waterDrops = [];
 
+// Extract center positions from the dot paths
+const dotPositions = [
+  { x: 35.04, y: 60.81 },
+  { x: 64.3, y: 46.2 },
+  { x: 100.84, y: 54.62 },
+  { x: 29.98, y: 108.07 },
+  { x: 68.79, y: 114.23 },
+  { x: 99.74, y: 86.67 },
+  { x: 46.29, y: 82.75 },
+  { x: 75.55, y: 70.37 },
+  { x: 68.23, y: 90.63 },
+];
+
+// Timer to control water drop frequency for each dot
+let dropTimers = new Array(9).fill(0);
+const DROP_INTERVAL = 0.15; // Time between drops from each hole (seconds)
+
 // Load SVG flower
 const flowerSVG = new Path2D(
   "M30.16,573.9c8.39-34.8,11.69-64.14,13.05-85.77,2.78-44.37-3.01-49.97-6.52-51.52-7.49-3.3-20.68,4.68-23.97,15.07-4.68,14.74,11.02,32.91,23.31,33.01,7.27.06,12.1-6.23,40.43-48.83,18.69-28.11,22.16-33.76,31.3-38.72,19.77-10.74,46.42-7.6,47.82-1.92,1.13,4.6-13.16,15.45-25.13,12.59-9.85-2.35-18.96-14.19-17.66-23.96,3.99-30.12,59.36,5.05,94.7.8,27.72-3.33,65.68-24.02,78.07-37.28,18.59-19.91,26.74-68.11,14.73-74.79-8.44-4.7-25.91,4.6-29.28,16.41-4.83,16.92,29.05,48.91,50.77,49.96,24.43,1.18,19.58-55.81,52.46-60.52,23.62-3.38,50.3,7.89,51.31,18.35.52,5.32-5.51,11.38-11.6,12.62-15.15,3.08-40.14-21.85-38.09-42.21,2.93-29.14,59.57-32.43,63.64-64.89,2.21-17.61-13.66-23.03-10.57-42.45,4.2-26.37,38.55-48.48,51.56-41.37,6.68,3.65,9.22,15.82,5.21,23.39-7.61,14.32-40.64,15.75-63.49,4.56-8.11-3.97-10.45-7.34-50.77-80.57-8.7-15.8-17.36-32.07-11.83-48.45,1.63-4.84,5.68-13.19,9.88-12.89,6.98.5,15.79,25.01,7.98,45.2-.56,1.44-7.95,19.75-25.24,24.84-12.22,3.6-16.97-3.07-30.09-2.14-25.05,1.78-49.2,29-44.79,41.44,2.64,7.47,16.08,11.01,26.04,7.93,14.55-4.49,21.6-23.05,17.15-33.91-4.64-11.31-21.33-13.18-41.77-15.21-23.7-2.35-52.98-5.25-87.17,9.91-41.14,18.25-61.24,50.18-68.98,62.87,0,0-17.14,28.09-26.67,80.56-.17.96-.69,3.81-.48,3.86.24.06,1.32-3.65,1.67-4.86,3.47-11.91,18.93-65.02,1.63-76.38-7.66-5.03-22.59-2.42-28.45,6.06-13.39,19.38,23.22,65.47,18.98,68.32-2.98,2-15.83-24.25-38.46-27.58-22.05-3.25-47.91,16.08-46.27,28.38,1.22,9.13,17.51,13.9,21.42,15.04,31.52,9.23,61.81-10.12,63.39-7,2,3.97-52.55,23.57-59.34,60.99-1.74,9.58-.81,22.86,5.62,26.01,8.57,4.19,25.08-10.55,34.54-22.94,21.69-28.4,23.13-66.45,25.26-66.06.35.06.42,1.13.43,1.26.19,2.93,2.24,34.02,8.15,47.35,4.46,10.06,15.98,20.97,28.67,19.85,9.69-.86,19.17-8.66,21.19-17.96,3.41-15.74-15.87-29.73-20.93-33.4-15.73-11.41-31.22-11.66-30.91-14.9.37-3.85,22.43-5.83,34.14-6.89,16.44-1.48,21.96-.72,23.95-4.49,3.3-6.24-6.72-18.05-14.16-23.91-4.97-3.91-11.3-8.9-17.26-7.09-5.48,1.67-6.19,7.74-14.78,20.23-3.58,5.2-13.12,15.43-15.37,17.97"
@@ -152,9 +169,9 @@ function drawWateringCan(x, y, rotation) {
   ctx.restore();
 }
 
-let plantHeight = 0; // Hauteur initiale de la plante
-let maxHeight = 200; // Hauteur maximale de la plante
-let growthRate = 0.1 * 10; // Decreased growth rate for slower plant growth
+let growthRate = 1; // Decreased growth rate for slower plant growth
+let growthDelayTimer = 0; // Timer for growth delay
+const MAX_GROWTH_HEIGHT = 0.35; // Maximum growth (0 to 1)
 
 function setup() {
   createCanvas(400, 400);
@@ -172,17 +189,41 @@ function draw() {
   }
 }
 
+let fadeInOpacity = 1; // Start fully black
+let fadeOutOpacity = 0; // Opacity for fade-out
+const FADE_DURATION = 0.1; // Duration for fade in/out in seconds
+
 function update(dt) {
   let nextState = undefined;
+
+  // Fade in effect
+  if (fadeInOpacity > 0) {
+    fadeInOpacity -= dt / FADE_DURATION; // Decrease opacity to fade in
+    fadeInOpacity = Math.max(fadeInOpacity, 0);
+  }
 
   // Check if mouse is over the watering can
   const mx = input.getX();
   const my = input.getY();
-  const dist = Math.sqrt((mx - canX) ** 2 + (my - canY) ** 2);
-  if (dist < 50) {
-    canvas.style.cursor = "pointer"; // Set cursor to pointer
+
+  // Calculate bounds for the watering can (approximately 171.98 x 216.94 scaled by 0.8)
+  const canWidth = 171.98 * 2;
+  const canHeight = 216.94 * 2;
+  const canLeft = canX - canWidth / 2;
+  const canRight = canX + canWidth / 2;
+  const canTop = canY - canHeight / 2;
+  const canBottom = canY + canHeight / 2;
+
+  const isOverCan =
+    mx >= canLeft && mx <= canRight && my >= canTop && my <= canBottom;
+
+  // Update cursor based on state and position
+  if (currentState === State.Dragging) {
+    canvas.style.cursor = "grabbing";
+  } else if (isOverCan) {
+    canvas.style.cursor = "grab";
   } else {
-    canvas.style.cursor = "default"; // Reset cursor to default
+    canvas.style.cursor = "default";
   }
 
   switch (currentState) {
@@ -190,8 +231,7 @@ function update(dt) {
       if (input.hasStarted()) {
         const mx = input.getX();
         const my = input.getY();
-        const dist = Math.sqrt((mx - canX) ** 2 + (my - canY) ** 2);
-        if (dist < 50) {
+        if (isOverCan) {
           dragOffsetX = canX - mx;
           dragOffsetY = canY - my;
           nextState = State.Dragging;
@@ -208,67 +248,57 @@ function update(dt) {
         if (isOverSoil(canX, canY + 20)) {
           canRotationSpring.target = -45;
 
-          // Increase the probability of creating water droplets
-          if (Math.random() < 0.7) {
-            // Increased probability for more droplets
-            waterDrops.push({
-              x: canX - 150, // Droplets start from the top left of the watering can
-              y: canY + 15,
-              vy: 200 + Math.random() * 50, // Increased vertical speed for water droplets
-              life: 1,
-            });
-          }
+          // Start growth delay timer
+          growthDelayTimer += dt;
+
+          // Update timers and create drops from each dot position
+          dotPositions.forEach((dot, index) => {
+            dropTimers[index] += dt;
+
+            if (dropTimers[index] >= DROP_INTERVAL) {
+              dropTimers[index] = 0;
+
+              // Calculate the world position of the dot
+              const angle = math.toRadian(canRotationSpring.position);
+              const scale = 0.8;
+              const offsetX = (dot.x - 171.98) * scale;
+              const offsetY = (dot.y - 216.94) * scale;
+
+              // Rotate the offset
+              const rotatedX =
+                offsetX * Math.cos(angle) - offsetY * Math.sin(angle);
+              const rotatedY =
+                offsetX * Math.sin(angle) + offsetY * Math.cos(angle);
+
+              waterDrops.push({
+                x: canX + rotatedX,
+                y: canY + rotatedY,
+                vx: Math.random() * 20 - 10, // Small horizontal variance
+                vy: 150 + Math.random() * 30, // Vertical speed with variance
+                life: 1,
+                size: 3 + Math.random() * 2, // Random size between 3-5
+              });
+            }
+          });
 
           wateringTimer += dt;
           waterLevel = Math.min(1, wateringTimer / WATERING_DURATION);
-          flowerHeightSpring.target = waterLevel;
+          flowerHeightSpring.target = Math.min(waterLevel, MAX_GROWTH_HEIGHT);
         } else {
           canRotationSpring.target = 0;
+          // Reset drop timers when not watering
+          dropTimers.fill(0);
+          growthDelayTimer = 0; // Reset the timer if not over soil
         }
       } else {
         canRotationSpring.target = 0;
-        if (waterLevel >= 1) {
-          nextState = State.Finished;
+        dropTimers.fill(0);
+        // Check if flower has reached maximum height
+        if (flowerHeightSpring.position >= MAX_GROWTH_HEIGHT * 0.98) {
+          nextState = State.Finished; // Transition to Finished if fully grown
         } else {
-          nextState = State.WaitingForInput;
+          nextState = State.WaitingForInput; // Otherwise, wait for input
         }
-      }
-      break;
-    }
-
-    case State.WaitingForInput: {
-      if (input.hasStarted()) {
-        const mx = input.getX();
-        const my = input.getY();
-        const dist = Math.sqrt((mx - canX) ** 2 + (my - canY) ** 2);
-        if (dist < 80) {
-          dragOffsetX = canX - mx;
-          dragOffsetY = canY - my;
-          nextState = State.Dragging;
-        }
-      }
-
-      if (isOverSoil(canX, canY + 20)) {
-        canRotationSpring.target = -45;
-
-        if (Math.random() < 0.3) {
-          waterDrops.push({
-            x: canX - 20,
-            y: canY + 15,
-            vy: 2000 + Math.random() * 1000, // Increased vertical speed for water droplets
-            life: 1,
-          });
-        }
-
-        wateringTimer += dt;
-        waterLevel = Math.min(1, wateringTimer / WATERING_DURATION);
-        flowerHeightSpring.target = waterLevel;
-
-        if (waterLevel >= 1) {
-          nextState = State.Finished;
-        }
-      } else {
-        canRotationSpring.target = 0;
       }
       break;
     }
@@ -284,7 +314,12 @@ function update(dt) {
     }
 
     case State.Finished: {
-      nextState = State.Transition; // Move to transition state
+      fadeOutOpacity += dt / FADE_DURATION; // Start fade out
+      fadeOutOpacity = Math.min(fadeOutOpacity, 1); // Cap opacity at 1
+
+      if (fadeOutOpacity >= 1) {
+        nextState = State.Transition; // Move to transition state
+      }
       break;
     }
 
@@ -310,8 +345,10 @@ function update(dt) {
 
   // Update water drops
   waterDrops = waterDrops.filter((drop) => {
+    drop.x += drop.vx * dt;
     drop.y += drop.vy * dt;
-    drop.life -= dt * -100;
+    drop.vy += 100 * dt; // Gravity acceleration
+    drop.life -= dt * 0.1;
     return drop.life > 0 && drop.y < soilRect.y + soilRect.height;
   });
 
@@ -329,10 +366,12 @@ function update(dt) {
   // Draw water drops
   ctx.fillStyle = "white";
   waterDrops.forEach((drop) => {
+    ctx.globalAlpha = drop.life;
     ctx.beginPath();
-    ctx.arc(drop.x, drop.y, 5, 0, Math.PI * 2);
+    ctx.arc(drop.x, drop.y, drop.size, 0, Math.PI * 2);
     ctx.fill();
   });
+  ctx.globalAlpha = 1;
 
   // Draw watering can
   drawWateringCan(
@@ -342,6 +381,6 @@ function update(dt) {
   );
 
   // Draw the transition overlay
-  ctx.fillStyle = `rgba(0, 0, 0, ${transitionOpacity / 100})`; // Set fill color with opacity
+  ctx.fillStyle = `rgba(0, 0, 0, ${fadeInOpacity + fadeOutOpacity})`; // Set fill color with combined opacity
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
