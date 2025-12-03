@@ -4,7 +4,7 @@ const trianglePath = "M129.71 241.34 L132.95 251.55 L140.49 242.44 Z";
 
 import { createEngine } from "../_shared/engine.js";
 import { Spring } from "../_shared/spring.js";
-const { renderer, run } = createEngine();
+const { renderer, run, finish } = createEngine();
 const { ctx, canvas } = renderer;
 run(update);
 
