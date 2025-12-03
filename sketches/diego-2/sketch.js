@@ -1,6 +1,25 @@
 import { createEngine } from "../_shared/engine.js";
 import { Spring } from "../_shared/spring.js";
 
+const waterSound = new Audio("assets/water.mp3");
+waterSound.volume = 0;
+
+function fadeAudio(audio, targetVolume, duration) {
+  const step = (targetVolume - audio.volume) / (duration * 60);
+  const fade = () => {
+    audio.volume += step;
+    if (
+      (step > 0 && audio.volume < targetVolume) ||
+      (step < 0 && audio.volume > targetVolume)
+    ) {
+      requestAnimationFrame(fade);
+    } else {
+      audio.volume = targetVolume;
+    }
+  };
+  fade();
+}
+
 const { renderer, input, math, run, finish } = createEngine();
 const { ctx, canvas } = renderer;
 
@@ -53,7 +72,7 @@ const soilRect = {
   x: canvas.width * 0.36,
   y: canvas.height * 0.75,
   width: canvas.width * 0.28,
-  height: canvas.height * 0.08,
+  height: canvas.height * 0.02,
 };
 
 let canX = canvas.width * 0.8;
@@ -86,7 +105,7 @@ const flowerSVG = new Path2D(
 
 function isOverSoil(x, y) {
   return (
-    x > 200 + soilRect.x &&
+    x > soilRect.x &&
     x < soilRect.x + soilRect.width &&
     y < soilRect.y + soilRect.height
   );
@@ -312,6 +331,10 @@ function update(dt) {
     ) {
       if (isCurrentlyWatering) {
         hasWaterTouchedSoil = true;
+        if (waterSound.paused) {
+          fadeAudio(waterSound, 1, 0.5);
+          waterSound.play();
+        }
       }
       return false;
     }
@@ -321,6 +344,17 @@ function update(dt) {
 
   if (hasWaterTouchedSoil && isCurrentlyWatering) {
     flowerHeightSpring.target = Math.min(waterLevel, MAX_GROWTH_HEIGHT);
+  }
+
+  if (isCurrentlyWatering && hasWaterTouchedSoil) {
+    if (waterSound.paused) {
+      waterSound.currentTime = 20;
+      waterSound.play();
+      fadeAudio(waterSound, 1, 0.1);
+    }
+  } else if (!isCurrentlyWatering || !hasWaterTouchedSoil) {
+    waterSound.pause();
+    waterSound.currentTime = 20;
   }
 
   ctx.fillStyle = "black";
