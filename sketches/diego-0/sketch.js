@@ -10,7 +10,7 @@ let isDropping = false;
 let finished = false;
 
 let eggTimer = 0;
-const EGG_INTERVAL = 0.1; // 1 œuf / 0.1s
+const EGG_INTERVAL = 0.2; // 1 œuf / 0.1s
 
 // ---- IMAGES ----
 const feet = new Image();
@@ -58,6 +58,24 @@ font
   })
   .catch((err) => console.error("Font error", err));
 
+// ---- SON ----
+const chickenSound = new Audio("assets/chicken.mp3");
+chickenSound.loop = true; // Set to loop
+chickenSound.volume = 0.5;
+
+// Function to play background sound from 0 to 10 seconds
+function playBackgroundSound() {
+  chickenSound.currentTime = 0; // Start from 0 seconds
+  chickenSound.play();
+}
+
+// Event listener for mouse click to start the background sound
+canvas.addEventListener("click", () => {
+  if (chickenSound.paused) {
+    playBackgroundSound(); // Play sound only on the first click
+  }
+});
+
 // ---- CLASSE ŒUF ----
 class Egg {
   constructor(x, y) {
@@ -68,6 +86,26 @@ class Egg {
     this.rotation = Math.random() * 0.4 - 0.2;
     this.rotationSpeed = (Math.random() - 0.5) * 1.5;
     this.radius = 35;
+
+    // Initialize sound for each egg
+    this.eggSound = new Audio("assets/egg.mp3");
+    this.eggSound.preload = "auto";
+    this.eggSound.volume = 0.5;
+  }
+
+  playSound() {
+    try {
+      this.eggSound.currentTime = 11.8; // Set to start time for egg sound
+      this.eggSound.play();
+
+      // Stop the sound after 12.5 seconds
+      this.eggSound.addEventListener("timeupdate", () => {
+        if (this.eggSound.currentTime >= 12.3) {
+          this.eggSound.pause();
+          this.eggSound.currentTime = 12; // Reset to start for next use
+        }
+      });
+    } catch (e) {}
   }
 
   update(dt) {
@@ -276,7 +314,9 @@ function update(dt) {
     const spawnX = zeroCenterX; // Centered above the zero
     const spawnY = -50; // Start above the canvas (adjust as needed)
 
-    eggs.push(new Egg(spawnX, spawnY));
+    const newEgg = new Egg(spawnX, spawnY);
+    newEgg.playSound(); // Play sound for the new egg
+    eggs.push(newEgg);
   }
 
   // 2) update des œufs (gravité + vase 0 + sol)
@@ -308,25 +348,12 @@ function update(dt) {
     );
   }
 
-  // 6) optionnel : visualiser l’anneau du 0
-  /*
-  ctx.save();
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(zeroCenterX, zeroCenterY, zeroOuterRadius, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(zeroCenterX, zeroCenterY, zeroInnerRadius, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-  */
-
-  // 7) condition de fin
+  // 6) condition de fin
   if (!finished && eggs.length > 100) {
     finished = true;
     isDropping = false;
     canvas.style.cursor = "default";
+    chickenSound.pause(); // Stop the background sound when finished// Reset to start for next use
   }
 
   // Check for fade-out condition
@@ -335,6 +362,7 @@ function update(dt) {
     if (fadeOutTimer >= fadeOutDelay) {
       outroFade = Math.min(5, outroFade + dt / outroSpeed);
       if (outroFade >= 5) {
+        chickenSound.pause(); // Pause the background sound when fully faded out
         try {
           finish(); // Call finish when fully faded out
         } catch (e) {}
