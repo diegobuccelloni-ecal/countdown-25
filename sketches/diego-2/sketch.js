@@ -292,7 +292,7 @@ function update(dt) {
       fadeOutOpacity += dt / FADE_DURATION;
       fadeOutOpacity = Math.min(fadeOutOpacity, 1);
 
-      if (fadeOutOpacity >= 1) {
+      if (fadeOutOpacity >= 0.99) {
         nextState = State.Transition;
       }
       break;
@@ -300,7 +300,7 @@ function update(dt) {
 
     case State.Transition: {
       transitionOpacity += (100 / (TRANSITION_DURATION * 60)) * dt;
-      if (transitionOpacity >= 100) {
+      if (transitionOpacity >= 2) {
         transitionOpacity = 100;
         finish();
       }

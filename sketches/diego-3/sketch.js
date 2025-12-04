@@ -258,12 +258,10 @@ function update(dt) {
       breathSound.pause();
     }, 50);
 
+    setTimeout(finish, 1000);
+
     popSound.currentTime = 4;
     popSound.play().catch((e) => console.log("Pop sound failed:", e));
-
-    if (scale <= 0) {
-      finish();
-    }
   }
 
   if (!isPumping) {
