@@ -69,10 +69,10 @@ let wateringTimer = 0;
 const WATERING_DURATION = 50;
 
 const soilRect = {
-  x: canvas.width * 0.36,
+  x: canvas.width / 2 - 500,
   y: canvas.height * 0.75,
-  width: canvas.width * 0.28,
-  height: canvas.height * 0.02,
+  width: 1000,
+  height: 30,
 };
 
 let canX = canvas.width * 0.8;
@@ -168,7 +168,7 @@ function drawWateringCan(x, y, rotation) {
 }
 
 let growthDelayTimer = 0;
-const MAX_GROWTH_HEIGHT = 0.35;
+const MAX_GROWTH_HEIGHT = 0.32;
 
 let fadeInOpacity = 1;
 let fadeOutOpacity = 0;
