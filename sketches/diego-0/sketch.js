@@ -23,23 +23,57 @@ let faceLoaded = false;
 feet.onload = () => (feetLoaded = true);
 face.onload = () => (faceLoaded = true);
 
-let feetWidth = 1500;
-let feetHeight = 1900;
-let faceWidth = 500;
-let faceHeight = 2000;
+// Responsive sizing function
+function getResponsiveDimensions() {
+  const isMobile = canvas.width < 768;
+  const scaleFactor = isMobile ? 0.4 : 1.0;
 
-let feetX = canvas.width * 0.5;
-let feetY = 100;
+  return {
+    feetWidth: 1500 * scaleFactor,
+    feetHeight: 1900 * scaleFactor,
+    faceWidth: 500 * scaleFactor,
+    faceHeight: 2000 * scaleFactor,
+    feetX: canvas.width * 0.5,
+    feetY: 100 * scaleFactor,
+    faceX: canvas.width * (isMobile ? 0.75 : 0.8),
+    faceY: canvas.height * 0.15,
+    zeroCenterX: canvas.width * 0.5,
+    zeroCenterY: canvas.height * 0.5,
+    zeroFontSize: 1000 * (isMobile ? 0.5 : 1.0),
+  };
+}
 
-let faceX = canvas.width * 0.8;
-let faceY = canvas.height * 0.15;
-
-let zeroCenterX = canvas.width * 0.5;
-let zeroCenterY = canvas.height * 0.5;
-const zeroFontSize = 1000;
+// Initialize with responsive dimensions
+let dims = getResponsiveDimensions();
+let feetWidth = dims.feetWidth;
+let feetHeight = dims.feetHeight;
+let faceWidth = dims.faceWidth;
+let faceHeight = dims.faceHeight;
+let feetX = dims.feetX;
+let feetY = dims.feetY;
+let faceX = dims.faceX;
+let faceY = dims.faceY;
+let zeroCenterX = dims.zeroCenterX;
+let zeroCenterY = dims.zeroCenterY;
+const zeroFontSize = dims.zeroFontSize;
 
 const zeroOuterRadius = zeroFontSize * 0.45;
 const zeroInnerRadius = zeroFontSize * 0.2;
+
+// Handle window resize
+window.addEventListener("resize", () => {
+  dims = getResponsiveDimensions();
+  feetWidth = dims.feetWidth;
+  feetHeight = dims.feetHeight;
+  faceWidth = dims.faceWidth;
+  faceHeight = dims.faceHeight;
+  feetX = dims.feetX;
+  feetY = dims.feetY;
+  faceX = dims.faceX;
+  faceY = dims.faceY;
+  zeroCenterX = dims.zeroCenterX;
+  zeroCenterY = dims.zeroCenterY;
+});
 
 const font = new FontFace("TWKBurns", "url(assets/TWKBurns-Ultra.otf)");
 font
@@ -202,15 +236,6 @@ function resolveEggCollisions() {
       }
     }
   }
-}
-
-function isFaceClicked(mx, my) {
-  return (
-    mx > faceX - faceWidth / 2 &&
-    mx < faceX + faceWidth / 2 &&
-    my > faceY - faceHeight / 2 &&
-    my < faceY + faceHeight / 2
-  );
 }
 
 function isFeetClicked(mx, my) {
